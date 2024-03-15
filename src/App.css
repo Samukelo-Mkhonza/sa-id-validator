@@ -1,3 +1,83 @@
+/* Import the Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+.id-validator-container {
+    font-family: 'Poppins', sans-serif;
+}
+
+.id-validator-container input[type="text"]
+{
+    padding: 12px 2px;
+    border-radius: 20px;
+    outline: none;
+    border: 2px solid #ccc; /* Light grey border, adjust color code if necessary */
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+}
+.id-validator-container button {
+
+    padding: 7px 20px;
+    margin-top: 40px;
+    border-radius: 20px;
+    outline: none;
+    border: px solid #ccc; /* Light grey border, adjust color code if necessary */
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+}
+
+.id-validator-container input[type="text"] {
+    width: calc(100% - 42px); /* Adjust width as needed */
+    border-color: purple; /* Adjust color code to the shade of purple you want */
+    margin-right: 10px; /* Ensure there's a gap between the input and the button */
+}
+
+.id-validator-container button {
+    background-color: purple; /* Adjust color code to the shade of purple you want */
+    color: white;
+    border-color: WHITE;
+    cursor: pointer;
+    font-weight: 600; /* Poppins semi-bold */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.id-validator-container button:hover {
+    background-color: darken(purple, 10%); /* Darken function not valid in plain CSS, replace with darker purple color code */
+}
+
+/* Add custom styles for the layout if necessary */
+.id-validator-container form {
+    display: flex;
+    justify-content: start; /* Align to the start of the container */
+}
+
+/* Add responsiveness if necessary */
+@media (max-width: 768px) {
+    .id-validator-container form {
+        flex-direction: column;
+    }
+
+    .id-validator-container input[type="text"] {
+        width: 100%;
+        margin-bottom: 10px; /* Space between input and button on mobile */
+    }
+}
+/* app.css */
+
+.id-validator-container .image-container {
+  text-align: center; /* Center the image in the container */
+  margin-bottom: 10px; /* Add space below the image */
+}
+
+.id-validator-container .image-container img {
+  width: 100px; /* Set your desired width */
+  height: auto; /* Maintain aspect ratio */
+  margin-bottom: 10px; /* Space below the image */
+}
+
+
+
+
+
 .App {
   text-align: center;
 }
