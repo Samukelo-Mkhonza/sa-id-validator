@@ -46,7 +46,7 @@ function IDValidator() {
                     Enter ID Number:
                     <input
                         type="text"
-                        placeholder="Enter your 13 digit ID number e.g 1712255627186"
+                        placeholder="Enter your 13 digit ID number"
                         value={idNumber}
                         onChange={(e) => setIdNumber(e.target.value)}
                         style={{ textAlign: 'center' }}
