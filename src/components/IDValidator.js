@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import CloudZAlogo from '../images/CloudZAlogo.png';
+
 function IDValidator() {
     const [idNumber, setIdNumber] = useState('');
     const [result, setResult] = useState(null);
