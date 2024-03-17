@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import CloudZAlogo from '../images/CloudZAlogo.png';
 function IDValidator() {
     const [idNumber, setIdNumber] = useState('');
     const [result, setResult] = useState(null);
@@ -40,34 +40,50 @@ function IDValidator() {
     };
 
     return (
-        <div className="id-validator-container">
-            <form onSubmit={handleSubmit}>
-                <label>
-                    Enter ID Number:
-                    <input
-                        type="text"
-                        placeholder="Enter your 13 digit ID number"
-                        value={idNumber}
-                        onChange={(e) => setIdNumber(e.target.value)}
-                        style={{ textAlign: 'center' }}
-                    />
-                </label>
+<div className="id-validator-container" style={{ textAlign: 'center' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'start' }}>
+        <img src={CloudZAlogo} alt="Logo" style={{ position: 'relative', top: '-25px' }} />
+    </div>
+    <div style={{ marginTop: '5px' }}> {/* This div wraps the form and pushes it down */}
+        <form onSubmit={handleSubmit}>
+            <label>
+                Enter ID Number:
+                <input
+                    type="text"
+                    placeholder="Enter 13 digit ID number"
+                    value={idNumber}
+                    onChange={(e) => setIdNumber(e.target.value)}
+                    style={{ textAlign: 'center' }}
+                />
+            </label>
 
-                <button type="submit">Validate</button>
-            </form>
+            <button
+                type="submit"
+                style={{ border: '3px solid white' }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'lightgray')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+            >
+                Validate
+            </button>
+        </form>
+    </div>
 
-            {error && <div className="error">{error}</div>}
+    {error && <div className="error">{error}</div>}
 
-            {result && (
-                <div>
-                    <p>Valid South African ID number</p>
-                    <p>Date of Birth: {result.DOB}</p>
-                    <p>Gender: {result.gender}</p>
-                    <p>Citizenship: {result.citizenship}</p>
-                    <p>Age: {result.age}</p>
-                </div>
-            )}
+    {result && (
+        <div>
+            <p>Valid South African ID number</p>
+            <p>Date of Birth: {result.DOB}</p>
+            <p>Gender: {result.gender}</p>
+            <p>Citizenship: {result.citizenship}</p>
+            <p>Age: {result.age}</p>
         </div>
+    )}
+</div>
+
+    
+
+
     );
 }
 
