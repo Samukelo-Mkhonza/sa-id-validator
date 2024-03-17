@@ -70,9 +70,8 @@ function IDValidator() {
             </div>
 
             {error && <div className="error">{error}</div>}
-
             {result && (
-                <div>
+                <div style={{ textAlign: 'center', marginLeft: 'auto', marginRight: 'auto', maxWidth: '600px' }}>
                     <p>Valid South African ID number</p>
                     <p>Date of Birth: {result.DOB}</p>
                     <p>Gender: {result.gender}</p>
@@ -80,6 +79,7 @@ function IDValidator() {
                     <p>Age: {result.age}</p>
                 </div>
             )}
+
         </div>
     );
 }
