@@ -2,9 +2,6 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-})
 
 app.post('/validate-id', (req, res) => {
     const idNumber = req.body.idNumber;
@@ -44,18 +41,25 @@ app.post('/validate-id', (req, res) => {
 
     // Implement the Luhn algorithm for the check digit
     let sum = 0;
-    for (let i = 0; i < 13; i++) {
+    for (let i = 0; i < 12; i++) { // Process all digits except the check digit
         let digit = parseInt(idNumber[i], 10);
-        if (i % 2 === 0) { // Even indices (0-based)
-            sum += digit;
-        } else { // Odd indices (0-based)
-            let double = digit * 2;
-            sum += double > 9 ? double - 9 : double;
+        if ((12 - i) % 2 === 1) { // Note: '12 - i' effectively reverses the index for odd/even check
+            // Double every second digit from the right (excluding the check digit)
+            digit *= 2;
+            // If the result is greater than 9, subtract 9 from it
+            if (digit > 9) {
+                digit -= 9;
+            }
         }
+        sum += digit;
     }
-
-    const isValid = sum % 10 === 0;
-
+    
+    // The check digit is the last digit of the ID number
+    let checkDigit = parseInt(idNumber[12], 10);
+    
+    // The ID is valid if the sum plus the check digit is a multiple of 10
+    const isValid = (sum + checkDigit) % 10 === 0;
+    
     const result = {
         isValid: isValid,
         DOB: dateOfBirth.toISOString().substring(0, 10),
@@ -63,7 +67,7 @@ app.post('/validate-id', (req, res) => {
         citizenship: citizenship,
         age: age
     };
-
+    
     res.json(result);
 });
 
