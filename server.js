@@ -1,74 +1,85 @@
 const express = require('express');
-const app = express();
 const bodyParser = require('body-parser');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+app.use(cors());
 app.use(bodyParser.json());
 
-app.post('/validate-id', (req, res) => {
-    const idNumber = req.body.idNumber;
+const validateChecksum = (idNumber) => {
+    let sum = 0;
+    let isSecond = false;
+    for (let i = idNumber.length - 1; i >= 0; i--) {
+        let d = parseInt(idNumber.charAt(i), 10);
 
-    // Basic validation: Check if the input is exactly 13 digits long
-    if (!idNumber || idNumber.length !== 13 || !/^\d+$/.test(idNumber)) {
-        return res.json({ isValid: false });
+        if (isSecond) {
+            d *= 2;
+            if (d > 9) d -= 9;
+        }
+        sum += d;
+        isSecond = !isSecond;
     }
+    return (sum % 10) === 0;
+};
 
-    // Extract the date of birth from the ID
-    const dobYear = parseInt(idNumber.substring(0, 2), 10);
-    const dobMonth = parseInt(idNumber.substring(2, 4), 10) - 1; // Month is 0-indexed in JavaScript Date
+const validateSouthAfricanID = (idNumber) => {
+    if (idNumber.length !== 13) return { isValid: false, reason: "ID number must be 13 digits long." };
+
+    const dobYear = parseInt(idNumber.substring(0, 2), 10) + (parseInt(idNumber.substring(0, 2), 10) >= 50 ? 1900 : 2000);
+    const dobMonth = parseInt(idNumber.substring(2, 4), 10) - 1;
     const dobDay = parseInt(idNumber.substring(4, 6), 10);
 
-    // Determine century for year of birth
-    const currentYear = new Date().getFullYear();
-    const century = currentYear % 100 < dobYear ? 1900 : 2000;
-    const dateOfBirth = new Date(century + dobYear, dobMonth, dobDay);
+    const dob = new Date(Date.UTC(dobYear, dobMonth, dobDay, 12, 0, 0));
 
-    // Validate the date of birth
-    if (dateOfBirth.getFullYear() !== century + dobYear ||
-        dateOfBirth.getMonth() !== dobMonth ||
-        dateOfBirth.getDate() !== dobDay) {
-        return res.json({ isValid: false });
+    if (isNaN(dob.getTime())) {
+        return { isValid: false, reason: "Invalid date of birth in ID number." };
     }
 
-    // Determine the gender
     const genderCode = parseInt(idNumber.substring(6, 10), 10);
-    const gender = genderCode < 5000 ? 'Female' : 'Male';
+    const gender = genderCode < 5000 ? "Female" : "Male";
 
-    // Determine the citizenship
-    const citizenshipCode = parseInt(idNumber[10], 10);
-    const citizenship = citizenshipCode === 0 ? 'SA Citizen' : 'Permanent Resident';
-
-    // Calculate age
-    const age = currentYear - (century + dobYear);
-
-    // Implement the Luhn algorithm for the check digit
-    let sum = 0;
-    for (let i = 0; i < 12; i++) { // Process all digits except the check digit
-        let digit = parseInt(idNumber[i], 10);
-        if ((12 - i) % 2 === 1) { // Note: '12 - i' effectively reverses the index for odd/even check
-            // Double every second digit from the right (excluding the check digit)
-            digit *= 2;
-            // If the result is greater than 9, subtract 9 from it
-            if (digit > 9) {
-                digit -= 9;
-            }
-        }
-        sum += digit;
+    const citizenshipCode = parseInt(idNumber.substring(10, 11), 10);
+    if (citizenshipCode !== 0 && citizenshipCode !== 1) {
+        return { isValid: false, reason: "Citizenship digit must be 0 (SA Citizen) or 1 (Permanent Resident)." };
     }
-    
-    // The check digit is the last digit of the ID number
-    let checkDigit = parseInt(idNumber[12], 10);
-    
-    // The ID is valid if the sum plus the check digit is a multiple of 10
-    const isValid = (sum + checkDigit) % 10 === 0;
-    
-    const result = {
-        isValid: isValid,
-        DOB: dateOfBirth.toISOString().substring(0, 10),
+    const citizenship = citizenshipCode === 0 ? "SA Citizen" : "Permanent Resident";
+
+    if (!validateChecksum(idNumber)) {
+        return { isValid: false, reason: "Checksum validation failed." };
+    }
+
+    const now = new Date();
+    const utcNow = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0);
+    let age = new Date(utcNow).getUTCFullYear() - dob.getUTCFullYear();
+    if (new Date(utcNow).getUTCMonth() < dob.getUTCMonth() || (new Date(utcNow).getUTCMonth() === dob.getUTCMonth() && new Date(utcNow).getUTCDate() < dob.getUTCDate())) {
+        age--;
+    }
+
+    const formattedDOB = `${dob.getUTCFullYear()}-${String(dob.getUTCMonth() + 1).padStart(2, '0')}-${String(dob.getUTCDate()).padStart(2, '0')}`;
+
+    return {
+        isValid: true,
+        DOB: formattedDOB,
         gender: gender,
         citizenship: citizenship,
         age: age
     };
-    
-    res.json(result);
+};
+
+app.post('/validate-id', (req, res) => {
+    const { idNumber } = req.body;
+    if (!idNumber) {
+        return res.status(400).send({ message: 'ID number is required.' });
+    }
+    const validationResults = validateSouthAfricanID(idNumber);
+    if (!validationResults.isValid) {
+        return res.status(400).send(validationResults);
+    }
+    res.json(validationResults);
 });
 
-app.listen(3001, () => console.log('Server listening on port 3001'));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});

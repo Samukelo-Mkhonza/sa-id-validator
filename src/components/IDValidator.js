@@ -1,89 +1,85 @@
 import React, { useState } from 'react';
+import CloudZAlogo from '../images/CloudZAlogo.png';
 
 function IDValidator() {
     const [idNumber, setIdNumber] = useState('');
     const [result, setResult] = useState(null);
+    const [error, setError] = useState('');
 
-    const validateChecksum = (idNumber) => {
-        let sum = 0;
-        let isSecond = false;
-        for (let i = idNumber.length - 1; i >= 0; i--) {
-            let d = parseInt(idNumber.charAt(i), 10);
+    const validateIDNumber = async (idNumber) => {
+        setError('');
+        setResult(null);
 
-            if (isSecond) {
-                d *= 2;
-                if (d > 9) d -= 9;
+        try {
+            const response = await fetch('http://localhost:3001/validate-id', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ idNumber }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                if (data.isValid) {
+                    setResult(data);
+                } else {
+                    setError(data.reason || 'Invalid ID number. Please check the format and try again.');
+                }
+            } else {
+                throw new Error(data.reason || 'Failed to validate ID number. Please try again later.');
             }
-            sum += d;
-            isSecond = !isSecond;
+        } catch (error) {
+            console.error('There was a problem with the fetch operation:', error);
+            setError(error.message);
         }
-        return (sum % 10) === 0;
-    };
-
-    const validateSouthAfricanID = (idNumber) => {
-        if (idNumber.length !== 13) return { isValid: false };
-
-        const dobYear = parseInt(idNumber.substring(0, 2), 10);
-        const dobMonth = parseInt(idNumber.substring(2, 4), 10) - 1;
-        const dobDay = parseInt(idNumber.substring(4, 6), 10);
-        const dob = new Date(dobYear >= 50 ? 1900 + dobYear : 2000 + dobYear, dobMonth, dobDay);
-
-        const genderCode = parseInt(idNumber.substring(6, 10), 10);
-        const gender = genderCode < 5000 ? "Female" : "Male";
-
-        const citizenship = parseInt(idNumber.substring(10, 11), 10) === 0 ? "SA Citizen" : "Permanent Resident";
-
-        if (!validateChecksum(idNumber)) return { isValid: false };
-
-        let age = new Date().getFullYear() - dob.getFullYear();
-        if (new Date().getMonth() - dob.getMonth() < 0 || (new Date().getMonth() - dob.getMonth() === 0 && new Date().getDate() < dob.getDate())) {
-            age--;
-        }
-
-        const formattedDOB = `${dob.getFullYear()}-${String(dob.getMonth() + 1).padStart(2, '0')}-${String(dob.getDate()).padStart(2, '0')}`;
-
-        return {
-            isValid: true,
-            DOB: formattedDOB,
-            gender: gender,
-            citizenship: citizenship,
-            age: age
-        };
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const validationResults = validateSouthAfricanID(idNumber);
-        setResult(validationResults);
+        validateIDNumber(idNumber);
     };
 
     return (
-        <div className="id-validator-container"> {/* Apply the CSS class here */}
-            <form onSubmit={handleSubmit}>
-                <label>
-                    Enter ID Number:
-                
-                    <input type="text" placeholder="e.g 1712255627186" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
-                </label>
-                
-                <button type="submit">Validate</button>
-            </form>
-            
+        <div className="id-validator-container" style={{ textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'start' }}>
+                <img src={CloudZAlogo} alt="Logo" style={{ position: 'relative', top: '-25px' }} />
+            </div>
+            <div style={{ marginTop: '5px' }}>
+                <form onSubmit={handleSubmit}>
+                    <label>
+                        Enter ID Number:
+                        <input
+                            type="text"
+                            placeholder="Enter 13 digit ID number"
+                            value={idNumber}
+                            onChange={(e) => setIdNumber(e.target.value)}
+                            style={{ textAlign: 'center' }}
+                        />
+                    </label>
+
+                    <button
+                        type="submit"
+                        style={{ border: '3px solid white' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'lightgray')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                    >
+                        Validate
+                    </button>
+                </form>
+            </div>
+
+            {error && <div className="error">{error}</div>}
             {result && (
-                <div>
-                    {result.isValid ? (
-                        <div>
-                            <p>Valid South African ID number</p>
-                            <p>Date of Birth: {result.DOB}</p>
-                            <p>Gender: {result.gender}</p>
-                            <p>Citizenship: {result.citizenship}</p>
-                            <p>Age: {result.age}</p>
-                        </div>
-                    ) : (
-                        <p>Invalid South African ID number.</p>
-                    )}
+                <div style={{ textAlign: 'center', marginLeft: 'auto', marginRight: 'auto', maxWidth: '600px' }}>
+                    <p>Valid South African ID number</p>
+                    <p>Date of Birth: {result.DOB}</p>
+                    <p>Gender: {result.gender}</p>
+                    <p>Citizenship: {result.citizenship}</p>
+                    <p>Age: {result.age}</p>
                 </div>
             )}
+
         </div>
     );
 }
