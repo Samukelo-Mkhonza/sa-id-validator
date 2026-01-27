@@ -1,70 +1,155 @@
 # Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# South African ID Validator
+
+A full-stack web application for validating South African ID numbers and extracting information such as date of birth, gender, citizenship status, and age.
+
+## Features
+
+- Validates 13-digit South African ID numbers
+- Extracts and displays:
+  - Date of Birth
+  - Gender (Male/Female)
+  - Citizenship Status (SA Citizen/Permanent Resident)
+  - Current Age
+- Checksum validation using the Luhn algorithm
+- Clean, user-friendly interface
+- RESTful API backend for ID validation
+
+## Tech Stack
+
+**Frontend:**
+- React 18.2.0
+- Cloudscape Design Components
+- CSS3
+
+**Backend:**
+- Node.js
+- Express.js
+- CORS enabled for cross-origin requests
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn package manager
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd sa-id-validator
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+## Running the Application
+
+The application requires both the frontend and backend to be running simultaneously.
+
+### Development Mode
+
+1. Start the backend server (runs on port 3001):
+```bash
+npm run dev
+```
+
+2. In a separate terminal, start the React frontend (runs on port 3000):
+```bash
+npm start
+```
+
+3. Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
+
+### Production Build
+
+Build the React app for production:
+```bash
+npm run build
+```
+
+## API Endpoints
+
+### POST `/validate-id`
+
+Validates a South African ID number.
+
+**Request Body:**
+```json
+{
+  "idNumber": "9001015009087"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "isValid": true,
+  "DOB": "1990-01-01",
+  "gender": "Male",
+  "citizenship": "SA Citizen",
+  "age": 36
+}
+```
+
+**Error Response (400):**
+```json
+{
+  "isValid": false,
+  "reason": "ID number must be 13 digits long."
+}
+```
+
+## How South African ID Validation Works
+
+A South African ID number is 13 digits long with the following format:
+
+`YYMMDD SSSS C A Z`
+
+- **YYMMDD**: Date of birth (Year, Month, Day)
+- **SSSS**: Gender code (0000-4999 = Female, 5000-9999 = Male)
+- **C**: Citizenship (0 = SA Citizen, 1 = Permanent Resident)
+- **A**: Usually 8 or 9 (legacy race classification, no longer used)
+- **Z**: Checksum digit (Luhn algorithm)
+
+The validator checks:
+1. Length is exactly 13 digits
+2. Date of birth is valid
+3. Citizenship digit is 0 or 1
+4. Checksum passes Luhn algorithm validation
+
+## Project Structure
+
+```
+sa-id-validator/
+├── public/              # Static files
+├── src/
+│   ├── components/
+│   │   └── IDValidator.js    # Main validation component
+│   ├── images/
+│   │   └── CloudZAlogo.png   # Application logo
+│   ├── App.js           # Root component
+│   ├── App.css          # Application styles
+│   └── index.js         # Entry point
+├── server.js            # Express backend server
+├── package.json         # Dependencies and scripts
+└── README.md           # This file
+```
 
 ## Available Scripts
 
-In the project directory, you can run:
+- `npm start` - Runs the React app in development mode
+- `npm run dev` - Runs the backend server with nodemon (auto-restart)
+- `npm run build` - Builds the React app for production
+- `npm test` - Runs the test suite
 
-### `npm start`
+## License
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+ISC
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Author
 
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+CloudZA
