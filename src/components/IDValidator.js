@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CloudZAlogo from '../images/CloudZAlogo.png';
+import HomeAffairsLogo from '../images/home-affairs-logo.png';
 
 function IDValidator() {
     const [idNumber, setIdNumber] = useState('');
@@ -43,7 +43,7 @@ function IDValidator() {
     return (
         <div className="id-validator-container" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'start' }}>
-                <img src={CloudZAlogo} alt="Logo" style={{ position: 'relative', top: '-25px' }} />
+                <img src={HomeAffairsLogo} alt="Home Affairs Logo" style={{ position: 'relative', top: '-25px' }} />
             </div>
             <div style={{ marginTop: '5px' }}>
                 <form onSubmit={handleSubmit}>
@@ -60,8 +60,8 @@ function IDValidator() {
 
                     <button
                         type="submit"
-                        style={{ border: '3px solid white' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'lightgray')}
+                        style={{ border: '3px solid #FFD700' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#004D2C')}
                         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
                     >
                         Validate
