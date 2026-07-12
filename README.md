@@ -1,8 +1,14 @@
-# Getting Started with Create React App
-
 # South African ID Validator
 
 A full-stack web application for validating South African ID numbers and extracting information such as date of birth, gender, citizenship status, and age.
+
+## About
+
+South African ID numbers encode real personal information (date of birth, gender, and citizenship) in a checksum-verified 13-digit format. This project provides both a reusable validation API and a simple web UI so that the parsing and Luhn checksum logic don't need to be reimplemented by hand in every SA-focused application.
+
+- **API-first**: the validation logic lives behind a small Express endpoint, so it can be consumed by other services, not just the bundled UI.
+- **Client + server**: a React frontend (bootstrapped with Create React App and styled with Cloudscape Design Components) gives you a working reference implementation out of the box.
+- **No external dependencies for validation**: ID parsing and checksum logic run entirely in-process, no third-party ID-verification service required.
 
 ## Features
 
@@ -146,9 +152,17 @@ sa-id-validator/
 - `npm run build` - Builds the React app for production
 - `npm test` - Runs the test suite
 
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on submitting issues and pull requests, and note that this project follows a [Code of Conduct](.github/CODE_OF_CONDUCT.md).
+
+## Security
+
+If you discover a security vulnerability, please follow the responsible disclosure process described in [SECURITY.md](.github/SECURITY.md).
+
 ## License
 
-ISC
+This project is licensed under the [ISC License](LICENSE).
 
 ## Author
 
