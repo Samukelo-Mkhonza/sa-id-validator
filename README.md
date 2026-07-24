@@ -1,181 +1,236 @@
 # South African ID Validator
 
-A full-stack web application for validating South African ID numbers and extracting information such as date of birth, gender, citizenship status, and age.
+A full-stack toolkit for working with South African ID numbers: validate a single
+ID, validate a whole list (with fraud/duplicate flags), derive age-based social
+grant indicators, and keep a POPIA-conscious audit trail — all without depending
+on any external identity service.
 
-## About
+## What it does — and what it deliberately does not
 
-South African ID numbers encode real personal information (date of birth, gender, and citizenship) in a checksum-verified 13-digit format. This project provides both a reusable validation API and a simple web UI so that the parsing and Luhn checksum logic don't need to be reimplemented by hand in every SA-focused application.
+South African ID numbers encode real personal information (date of birth, gender
+and citizenship) in a checksum-verified 13-digit format. This project parses and
+**structurally validates** that format.
 
-- **API-first**: the validation logic lives behind a small Express endpoint, so it can be consumed by other services, not just the bundled UI.
-- **Client + server**: a React frontend (bootstrapped with Create React App and styled with Cloudscape Design Components) gives you a working reference implementation out of the box.
-- **No external dependencies for validation**: ID parsing and checksum logic run entirely in-process, no third-party ID-verification service required.
+> **Important:** a well-formed, checksum-passing number is **not** proof that the
+> ID exists in the National Population Register or belongs to a real person. True
+> identity/existence verification requires accredited **Department of Home Affairs
+> (HANIS/NPR)** access, which is out of scope here. Treat a valid result as
+> "well-formed", never as "verified identity".
+
+Everything in this repo works *today*, offline, with no DHA integration — which is
+exactly why it is useful for data-quality, pre-screening and fraud-signalling work.
 
 ## Features
 
-- Validates 13-digit South African ID numbers
-- Extracts and displays:
-  - Date of Birth
-  - Gender (Male/Female)
-  - Citizenship Status (SA Citizen/Permanent Resident)
-  - Current Age
-- Checksum validation using the Luhn algorithm
-- Clean, user-friendly interface
-- RESTful API backend for ID validation
+### Core validation (hardened)
+- 13-digit length and digits-only checks (tolerates incidental spaces)
+- **Strict calendar-date validation** — rejects impossible dates like month `13`
+  or `30 February` instead of silently rolling them over
+- **Rejects future dates of birth**
+- **Century-aware year handling** — instead of a naive fixed pivot, both the 1900s
+  and 2000s readings are tested and the plausible, non-future one is chosen;
+  genuinely ambiguous years are flagged (`birthDateAmbiguous`)
+- Luhn checksum validation
+- Machine-readable failure `code`s (e.g. `INVALID_DOB`, `CHECKSUM`) for automation
+- Decodes date of birth, gender, citizenship status and current age
+
+### Bulk validation + fraud signals
+- Validate thousands of IDs in one request (payroll, grant beneficiary or vendor
+  lists)
+- Flags **duplicate IDs** across the batch — the classic ghost-employee /
+  double-dipping fingerprint — plus invalid and century-ambiguous rows
+- Paste a list or upload a `.csv` / `.txt`, then **download the results as CSV**
+
+### SASSA grant pre-screening
+- Derives **age-based grant indicators** from a validated ID
+  (Older Person's, Child Support / Foster / Care Dependency, Disability)
+- Clearly labelled as a pre-screening hint only — never a grant decision
+
+### POPIA-conscious design
+- Full ID numbers are **never written to logs**
+- Append-only audit trail stores only a **salted hash** + **masked ID** + outcome
+- On-screen bulk results are **masked by default** with an opt-in reveal
+- Consent confirmation required before processing
+- Basic hardening: security headers, no-store caching, request size limit and a
+  simple rate limiter
 
 ## Tech Stack
 
-**Frontend:**
-- React 18.2.0
-- Cloudscape Design Components
-- CSS3
-
-**Backend:**
-- Node.js
-- Express.js
-- CORS enabled for cross-origin requests
+**Frontend:** React 18, plain CSS (Home Affairs colour scheme)
+**Backend:** Node.js, Express, no runtime dependencies for the validation logic
+**Tests:** Node's built-in test runner (`node:test`) — no extra tooling
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- npm or yarn package manager
+- Node.js (v18 or higher — the server tests use the built-in test runner)
+- npm
 
 ## Installation
 
-1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd sa-id-validator
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
 ## Running the Application
 
-The application requires both the frontend and backend to be running simultaneously.
+Start the Express backend (port **3001**) and React frontend (port **3000**)
+together:
 
-### Development Mode
-
-Start both the backend and frontend together with a single command:
 ```bash
 npm run dev
 ```
 
-This uses [`concurrently`](https://www.npmjs.com/package/concurrently) to run:
-- the Express backend on port **3001** (via `nodemon`, auto-restarts on changes) — prefixed `[server]`
-- the React frontend on port **3000** — prefixed `[client]`
+Then open [http://localhost:3000](http://localhost:3000). Press `Ctrl+C` once to
+stop both.
 
-Press `Ctrl+C` once to stop both. Then open your browser and navigate to [http://localhost:3000](http://localhost:3000).
+> If you see `EADDRINUSE` on 3001 or "Something is already running on port 3000",
+> a previous process is still running — stop it, then re-run `npm run dev`.
 
-> **Note:** if you see `EADDRINUSE` on port 3001 or "Something is already running on port 3000", a previous server or `npm start` is still running. Stop it first (see [Available Scripts](#available-scripts)), then run `npm run dev` again.
+Run the sides separately if you prefer:
 
-#### Running the backend and frontend separately
-
-If you prefer two terminals, you can still run each side on its own:
 ```bash
-npm run server   # backend only (port 3001)
+npm run server   # backend only (port 3001, auto-restart via nodemon)
 npm run client   # frontend only (port 3000)
-```
-
-### Production Build
-
-Build the React app for production:
-```bash
-npm run build
 ```
 
 ## API Endpoints
 
-### POST `/validate-id`
+### `POST /validate-id`
 
-Validates a South African ID number.
+Validate a single ID number.
 
-**Request Body:**
+**Request:**
 ```json
-{
-  "idNumber": "9001015009087"
-}
+{ "idNumber": "8001015009087", "consent": true, "includeGrants": true }
 ```
 
-**Success Response (200):**
+**Success (200):**
 ```json
 {
   "isValid": true,
-  "DOB": "1990-01-01",
+  "DOB": "1980-01-01",
   "gender": "Male",
   "citizenship": "SA Citizen",
-  "age": 36
+  "age": 46,
+  "birthDateAmbiguous": false,
+  "grants": {
+    "eligible": true,
+    "indicators": [
+      { "grant": "Disability Grant", "basis": "Working-age adult.", "subjectTo": "..." }
+    ],
+    "note": "Indicators are age-based only and are not a grant decision."
+  }
 }
 ```
 
-**Error Response (400):**
+**Failure (400):**
+```json
+{ "isValid": false, "code": "CHECKSUM", "reason": "Checksum validation failed." }
+```
+
+### `POST /validate-bulk`
+
+Validate a list of IDs and get per-row results plus batch fraud signals.
+
+**Request:**
+```json
+{ "idNumbers": ["8001015009087", "8001015009087", "123"], "consent": true }
+```
+
+**Response (200):**
 ```json
 {
-  "isValid": false,
-  "reason": "ID number must be 13 digits long."
+  "summary": { "total": 3, "valid": 2, "invalid": 1, "duplicateIdCount": 1, "duplicateRowCount": 2 },
+  "rows": [
+    { "index": 0, "isValid": true, "flags": ["DUPLICATE"], "DOB": "1980-01-01", "age": 46, "gender": "Male", "citizenship": "SA Citizen" },
+    { "index": 1, "isValid": true, "flags": ["DUPLICATE"], "DOB": "1980-01-01", "age": 46, "gender": "Male", "citizenship": "SA Citizen" },
+    { "index": 2, "isValid": false, "flags": ["INVALID"], "code": "LENGTH", "reason": "ID number must be 13 digits long." }
+  ]
 }
 ```
 
-## How South African ID Validation Works
+### `GET /health`
 
-A South African ID number is 13 digits long with the following format:
+Returns `{ "status": "ok" }`.
 
-`YYMMDD SSSS C A Z`
+## How South African ID validation works
 
-- **YYMMDD**: Date of birth (Year, Month, Day)
-- **SSSS**: Gender code (0000-4999 = Female, 5000-9999 = Male)
-- **C**: Citizenship (0 = SA Citizen, 1 = Permanent Resident)
-- **A**: Usually 8 or 9 (legacy race classification, no longer used)
-- **Z**: Checksum digit (Luhn algorithm)
+A 13-digit number in the format `YYMMDD SSSS C A Z`:
 
-The validator checks:
-1. Length is exactly 13 digits
-2. Date of birth is valid
-3. Citizenship digit is 0 or 1
-4. Checksum passes Luhn algorithm validation
+- **YYMMDD** — date of birth
+- **SSSS** — gender sequence (`0000`–`4999` = Female, `5000`–`9999` = Male)
+- **C** — citizenship (`0` = SA Citizen, `1` = Permanent Resident)
+- **A** — legacy digit (historically race; no longer used)
+- **Z** — Luhn checksum digit
+
+> Example valid test ID: **`8001015009087`** (born 1980-01-01). Note that the
+> previously-documented `9001015009087` actually *fails* the Luhn check.
+
+## POPIA & the audit trail
+
+Verification events are appended to `server/audit.log` (git-ignored) as one JSON
+object per line, containing a salted SHA-256 hash of the ID, a masked ID, the
+outcome and a consent flag — **never the raw ID**. Set a real secret in production:
+
+```bash
+# .env (git-ignored)
+ID_HASH_SALT=<a-long-random-secret>
+```
+
+## Testing
+
+```bash
+npm run test:server   # validator, grant and bulk logic (node:test)
+npm test              # React component tests (CRA/Jest)
+```
 
 ## Project Structure
 
 ```
 sa-id-validator/
-├── public/                      # Static files
 ├── src/                         # React frontend
 │   ├── components/
-│   │   └── IDValidator.js       # Main validation component
-│   ├── images/
-│   │   └── home-affairs-logo.png  # Application logo
-│   ├── App.js                   # Page shell (layout, footer)
-│   ├── App.css                  # Application styles
-│   └── index.js                 # Entry point
+│   │   ├── IDValidator.js       # Single-ID validation + grants + consent
+│   │   └── BulkValidator.js     # CSV/paste batch validation + results table
+│   ├── App.js                   # Tabs (single / bulk), layout, footer
+│   └── App.css                  # Styles
 ├── server/                      # Express backend
-│   ├── index.js                 # Server + /validate-id route
-│   └── validateId.js            # Reusable ID validation logic
-├── package.json                 # Dependencies and scripts
-└── README.md                    # This file
+│   ├── index.js                 # Routes, security headers, rate limit, audit
+│   ├── validateId.js            # Core validation logic
+│   ├── grantEligibility.js      # SASSA age-based grant indicators
+│   ├── bulkValidate.js          # Batch validation + duplicate detection
+│   ├── privacy.js               # Masking, hashing, POPIA audit log
+│   └── *.test.js                # node:test unit tests
+├── package.json
+└── README.md
 ```
 
-## Available Scripts
+## Roadmap toward real government value
 
-- `npm run dev` - Runs **both** the backend and frontend together (recommended for development)
-- `npm run server` - Runs only the backend server with nodemon (auto-restart, port 3001)
-- `npm run client` - Runs only the React frontend (port 3000)
-- `npm start` - Runs the React app in development mode (alias of `npm run client`)
-- `npm run build` - Builds the React app for production
-- `npm test` - Runs the test suite
+This repo covers everything achievable without privileged access. The natural next
+steps, in order of increasing barrier:
+
+1. **Name/DOB cross-checks** against an authoritative record (needs data).
+2. **Deceased-status checks** against DHA death records (grant-fraud prevention).
+3. **Live existence verification** via accredited DHA HANIS/NPR integration.
+
+Items 2–3 require formal DHA accreditation; the surrounding workflow, audit and UI
+here are designed to plug into them.
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on submitting issues and pull requests, and note that this project follows a [Code of Conduct](.github/CODE_OF_CONDUCT.md).
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) and the
+[Code of Conduct](.github/CODE_OF_CONDUCT.md).
 
 ## Security
 
-If you discover a security vulnerability, please follow the responsible disclosure process described in [SECURITY.md](.github/SECURITY.md).
+Report vulnerabilities via [SECURITY.md](.github/SECURITY.md).
 
 ## License
 
-This project is licensed under the [ISC License](LICENSE).
+[ISC](LICENSE).
 
 ## Author
 

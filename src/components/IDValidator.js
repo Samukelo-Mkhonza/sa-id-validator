@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import HomeAffairsLogo from '../images/home-affairs-logo.png';
 
+// Base URL for the validation API. Overridable at build time so the same UI can
+// point at a deployed backend instead of the local dev server.
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
+
 function IDValidator() {
     const [idNumber, setIdNumber] = useState('');
+    const [consent, setConsent] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -13,12 +18,12 @@ function IDValidator() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3001/validate-id', {
+            const response = await fetch(`${API_BASE}/validate-id`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ idNumber }),
+                body: JSON.stringify({ idNumber, consent, includeGrants: true }),
             });
 
             const data = await response.json();
@@ -29,7 +34,7 @@ function IDValidator() {
                     setError(data.reason || 'Invalid ID number. Please check the format and try again.');
                 }
             } else {
-                setError(data.reason || 'Invalid ID number. Please check the format and try again.');
+                setError(data.reason || data.message || 'Invalid ID number. Please check the format and try again.');
             }
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
@@ -57,6 +62,8 @@ function IDValidator() {
     };
 
     const hasSomethingToClear = idNumber !== '' || result !== null || error !== '';
+    const canSubmit = idNumber.length === 13 && consent && !isLoading;
+    const grants = result && result.grants ? result.grants.indicators : [];
 
     return (
         <section className="card">
@@ -90,16 +97,30 @@ function IDValidator() {
                         type="text"
                         inputMode="numeric"
                         maxLength={13}
-                        placeholder="e.g. 9001015009087"
+                        placeholder="e.g. 8001015009087"
                         value={idNumber}
                         onChange={handleChange}
                         autoComplete="off"
                     />
+
+                    <label className="consent">
+                        <input
+                            type="checkbox"
+                            className="consent__box"
+                            checked={consent}
+                            onChange={(e) => setConsent(e.target.checked)}
+                        />
+                        <span className="consent__text">
+                            I confirm I have the person’s consent, or a lawful basis, to
+                            process this ID number (POPIA).
+                        </span>
+                    </label>
+
                     <div className="form__actions">
                         <button
                             type="submit"
                             className="form__button"
-                            disabled={isLoading || idNumber.length !== 13}
+                            disabled={!canSubmit}
                         >
                             {isLoading ? (
                                 <>
@@ -132,7 +153,7 @@ function IDValidator() {
                     <div className="result" role="status">
                         <div className="result__badge">
                             <span className="result__check" aria-hidden="true">✓</span>
-                            Valid South African ID number
+                            Well-formed South African ID number
                         </div>
                         <dl className="result__list">
                             <div className="result__row">
@@ -152,6 +173,35 @@ function IDValidator() {
                                 <dd>{result.age} years</dd>
                             </div>
                         </dl>
+
+                        {result.birthDateAmbiguous && (
+                            <div className="alert alert--warn" role="note">
+                                <span className="alert__icon alert__icon--warn" aria-hidden="true">i</span>
+                                <span>
+                                    The two-digit year is ambiguous (could be last century).
+                                    The most recent reading is shown — confirm the real date
+                                    of birth against an official record.
+                                </span>
+                            </div>
+                        )}
+
+                        {grants.length > 0 && (
+                            <div className="grants">
+                                <h2 className="grants__title">Age-based grant indicators</h2>
+                                <ul className="grants__list">
+                                    {grants.map((g) => (
+                                        <li key={g.grant} className="grants__item">
+                                            <span className="grants__name">{g.grant}</span>
+                                            <span className="grants__note">{g.subjectTo}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="grants__disclaimer">
+                                    Pre-screening hint only — not a grant decision. Every grant
+                                    remains subject to a means test and SASSA verification.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
