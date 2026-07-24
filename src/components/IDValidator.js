@@ -5,10 +5,12 @@ function IDValidator() {
     const [idNumber, setIdNumber] = useState('');
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const validateIDNumber = async (idNumber) => {
         setError('');
         setResult(null);
+        setIsLoading(true);
 
         try {
             const response = await fetch('http://localhost:3001/validate-id', {
@@ -27,12 +29,20 @@ function IDValidator() {
                     setError(data.reason || 'Invalid ID number. Please check the format and try again.');
                 }
             } else {
-                throw new Error(data.reason || 'Failed to validate ID number. Please try again later.');
+                setError(data.reason || 'Invalid ID number. Please check the format and try again.');
             }
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
-            setError(error.message);
+            setError('Could not reach the validation service. Please make sure the server is running and try again.');
+        } finally {
+            setIsLoading(false);
         }
+    };
+
+    const handleChange = (e) => {
+        // Keep only digits and cap at 13 characters.
+        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 13);
+        setIdNumber(digitsOnly);
     };
 
     const handleSubmit = (e) => {
@@ -41,46 +51,79 @@ function IDValidator() {
     };
 
     return (
-        <div className="id-validator-container" style={{ textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'start' }}>
-                <img src={HomeAffairsLogo} alt="Home Affairs Logo" style={{ position: 'relative', top: '-25px' }} />
+        <section className="card">
+            <div className="card__brand">
+                <img
+                    src={HomeAffairsLogo}
+                    alt="Department of Home Affairs, Republic of South Africa"
+                    className="card__logo"
+                />
             </div>
-            <div style={{ marginTop: '5px' }}>
-                <form onSubmit={handleSubmit}>
-                    <label>
-                        Enter ID Number:
-                        <input
-                            type="text"
-                            placeholder="Enter 13 digit ID number"
-                            value={idNumber}
-                            onChange={(e) => setIdNumber(e.target.value)}
-                            style={{ textAlign: 'center' }}
-                        />
-                    </label>
 
+            <div className="card__body">
+                <h1 className="card__title">South African ID Validator</h1>
+                <p className="card__subtitle">
+                    Enter a 13-digit ID number to verify its checksum and view the
+                    encoded details.
+                </p>
+
+                <form onSubmit={handleSubmit} className="form">
+                    <label htmlFor="id-input" className="form__label">ID Number</label>
+                    <input
+                        id="id-input"
+                        className="form__input"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={13}
+                        placeholder="e.g. 9001015009087"
+                        value={idNumber}
+                        onChange={handleChange}
+                        autoComplete="off"
+                    />
                     <button
                         type="submit"
-                        style={{ border: '3px solid #FFD700' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#004D2C')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '')}
+                        className="form__button"
+                        disabled={isLoading || idNumber.length !== 13}
                     >
-                        Validate
+                        {isLoading ? 'Validating…' : 'Validate'}
                     </button>
                 </form>
+
+                {error && (
+                    <div className="alert alert--error" role="alert">
+                        <span className="alert__icon" aria-hidden="true">!</span>
+                        <span>{error}</span>
+                    </div>
+                )}
+
+                {result && (
+                    <div className="result" role="status">
+                        <div className="result__badge">
+                            <span className="result__check" aria-hidden="true">✓</span>
+                            Valid South African ID number
+                        </div>
+                        <dl className="result__list">
+                            <div className="result__row">
+                                <dt>Date of Birth</dt>
+                                <dd>{result.DOB}</dd>
+                            </div>
+                            <div className="result__row">
+                                <dt>Gender</dt>
+                                <dd>{result.gender}</dd>
+                            </div>
+                            <div className="result__row">
+                                <dt>Citizenship</dt>
+                                <dd>{result.citizenship}</dd>
+                            </div>
+                            <div className="result__row">
+                                <dt>Age</dt>
+                                <dd>{result.age} years</dd>
+                            </div>
+                        </dl>
+                    </div>
+                )}
             </div>
-
-            {error && <div className="error">{error}</div>}
-            {result && (
-                <div style={{ textAlign: 'center', marginLeft: 'auto', marginRight: 'auto', maxWidth: '600px' }}>
-                    <p>Valid South African ID number</p>
-                    <p>Date of Birth: {result.DOB}</p>
-                    <p>Gender: {result.gender}</p>
-                    <p>Citizenship: {result.citizenship}</p>
-                    <p>Age: {result.age}</p>
-                </div>
-            )}
-
-        </div>
+        </section>
     );
 }
 

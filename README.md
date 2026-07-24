@@ -58,17 +58,26 @@ The application requires both the frontend and backend to be running simultaneou
 
 ### Development Mode
 
-1. Start the backend server (runs on port 3001):
+Start both the backend and frontend together with a single command:
 ```bash
 npm run dev
 ```
 
-2. In a separate terminal, start the React frontend (runs on port 3000):
-```bash
-npm start
-```
+This uses [`concurrently`](https://www.npmjs.com/package/concurrently) to run:
+- the Express backend on port **3001** (via `nodemon`, auto-restarts on changes) — prefixed `[server]`
+- the React frontend on port **3000** — prefixed `[client]`
 
-3. Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
+Press `Ctrl+C` once to stop both. Then open your browser and navigate to [http://localhost:3000](http://localhost:3000).
+
+> **Note:** if you see `EADDRINUSE` on port 3001 or "Something is already running on port 3000", a previous server or `npm start` is still running. Stop it first (see [Available Scripts](#available-scripts)), then run `npm run dev` again.
+
+#### Running the backend and frontend separately
+
+If you prefer two terminals, you can still run each side on its own:
+```bash
+npm run server   # backend only (port 3001)
+npm run client   # frontend only (port 3000)
+```
 
 ### Production Build
 
@@ -131,24 +140,28 @@ The validator checks:
 
 ```
 sa-id-validator/
-├── public/              # Static files
-├── src/
+├── public/                      # Static files
+├── src/                         # React frontend
 │   ├── components/
-│   │   └── IDValidator.js    # Main validation component
+│   │   └── IDValidator.js       # Main validation component
 │   ├── images/
-│   │   └── CloudZAlogo.png   # Application logo
-│   ├── App.js           # Root component
-│   ├── App.css          # Application styles
-│   └── index.js         # Entry point
-├── server.js            # Express backend server
-├── package.json         # Dependencies and scripts
-└── README.md           # This file
+│   │   └── home-affairs-logo.png  # Application logo
+│   ├── App.js                   # Page shell (layout, footer)
+│   ├── App.css                  # Application styles
+│   └── index.js                 # Entry point
+├── server/                      # Express backend
+│   ├── index.js                 # Server + /validate-id route
+│   └── validateId.js            # Reusable ID validation logic
+├── package.json                 # Dependencies and scripts
+└── README.md                    # This file
 ```
 
 ## Available Scripts
 
-- `npm start` - Runs the React app in development mode
-- `npm run dev` - Runs the backend server with nodemon (auto-restart)
+- `npm run dev` - Runs **both** the backend and frontend together (recommended for development)
+- `npm run server` - Runs only the backend server with nodemon (auto-restart, port 3001)
+- `npm run client` - Runs only the React frontend (port 3000)
+- `npm start` - Runs the React app in development mode (alias of `npm run client`)
 - `npm run build` - Builds the React app for production
 - `npm test` - Runs the test suite
 

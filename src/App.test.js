@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders the ID validator heading', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const heading = screen.getByRole('heading', { name: /south african id validator/i });
+  expect(heading).toBeInTheDocument();
+});
+
+test('renders the ID number input', () => {
+  render(<App />);
+  const input = screen.getByLabelText(/id number/i);
+  expect(input).toBeInTheDocument();
 });

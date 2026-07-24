@@ -1,118 +1,327 @@
 /* Import the Poppins font */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-.id-validator-container {
-    font-family: 'Poppins', sans-serif;
+:root {
+    --ha-green: #006B3F;      /* Home Affairs green */
+    --ha-green-dark: #004D2C; /* Darker green (hover) */
+    --ha-gold: #FFD700;       /* Gold accent */
+    --ink: #1c2b22;           /* Primary text */
+    --muted: #5b6b62;         /* Secondary text */
+    --line: #e3ece7;          /* Borders / dividers */
+    --bg: #f4f7f5;            /* Page background */
+    --card: #ffffff;          /* Card background */
+    --danger: #c8102e;        /* Error red */
+    --danger-bg: #fdecee;     /* Error background */
+    --radius: 16px;
+    --shadow: 0 10px 30px rgba(0, 47, 26, 0.08), 0 2px 6px rgba(0, 47, 26, 0.05);
 }
 
-.id-validator-container input[type="text"]
-{
-    padding: 12px 2px;
-    border-radius: 20px;
-    outline: none;
-    border: 2px solid #ccc; /* Light grey border, adjust color code if necessary */
-    font-family: 'Poppins', sans-serif;
-    font-size: 1rem;
-}
-.id-validator-container button {
-
-    padding: 7px 20px;
-    margin-top: 40px;
-    border-radius: 20px;
-    outline: none;
-    border: px solid #ccc; /* Light grey border, adjust color code if necessary */
-    font-family: 'Poppins', sans-serif;
-    font-size: 1rem;
+* {
+    box-sizing: border-box;
 }
 
-.id-validator-container input[type="text"] {
-    width: calc(100% - 42px);
-    border-color: #006B3F; /* Home Affairs green */
-    margin-right: 10px;
+.page {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background-color: var(--bg);
+    /* Layered background: soft green glow, gold glow, and a faint dot grid */
+    background-image:
+        radial-gradient(circle at 12% 18%, rgba(0, 107, 63, 0.10), transparent 42%),
+        radial-gradient(circle at 88% 82%, rgba(255, 215, 0, 0.13), transparent 42%),
+        radial-gradient(rgba(0, 107, 63, 0.05) 1.3px, transparent 1.3px);
+    background-size: 100% 100%, 100% 100%, 24px 24px;
+    background-attachment: fixed;
+    overflow-x: hidden;
 }
 
-.id-validator-container button {
-    background-color: #006B3F; /* Home Affairs green */
-    color: #FFD700; /* Gold text */
-    border-color: #FFD700;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
+/* Faint coat-of-arms watermark behind the content */
+.page__watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(760px, 130vw);
+    height: auto;
+    transform: translate(-50%, -50%);
+    opacity: 0.05;
+    filter: grayscale(1);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
 }
 
-.id-validator-container button:hover {
-    background-color: #004D2C; /* Darker green on hover */
+/* Keep real content above the decorative layers */
+.page__accent,
+.page__main,
+.page__footer {
+    position: relative;
+    z-index: 1;
 }
 
-/* Add custom styles for the layout if necessary */
-.id-validator-container form {
+/* Decorative government-style accent bar */
+.page__accent {
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(
+        90deg,
+        var(--ha-green) 0%,
+        var(--ha-green) 70%,
+        var(--ha-gold) 70%,
+        var(--ha-gold) 100%
+    );
+}
+
+.page__main {
+    flex: 1;
+    width: 100%;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+    padding: 48px 20px;
 }
 
-/* Add responsiveness if necessary */
-@media (max-width: 768px) {
-    .id-validator-container form {
-        flex-direction: column;
+/* ---------- Card ---------- */
+.card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.card__brand {
+    display: flex;
+    justify-content: center;
+    padding: 32px 32px 0;
+}
+
+.card__logo {
+    width: 280px;
+    max-width: 100%;
+    height: auto;
+}
+
+.card__body {
+    padding: 24px 32px 32px;
+}
+
+.card__title {
+    margin: 8px 0 6px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ha-green);
+    text-align: center;
+}
+
+.card__subtitle {
+    margin: 0 0 24px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--muted);
+    text-align: center;
+}
+
+/* ---------- Form ---------- */
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.form__label {
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink);
+}
+
+.form__input {
+    width: 100%;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    color: var(--ink);
+    background: #fff;
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form__input::placeholder {
+    letter-spacing: normal;
+    color: #9aa8a0;
+}
+
+.form__input:focus {
+    border-color: var(--ha-green);
+    box-shadow: 0 0 0 3px rgba(0, 107, 63, 0.15);
+}
+
+.form__button {
+    margin-top: 16px;
+    padding: 14px 20px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--ha-green);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.05s ease, opacity 0.2s ease;
+}
+
+.form__button:hover:not(:disabled) {
+    background: var(--ha-green-dark);
+}
+
+.form__button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.form__button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* ---------- Alert ---------- */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.alert--error {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid #f3c2c9;
+}
+
+.alert__icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* ---------- Result ---------- */
+.result {
+    margin-top: 24px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.result__badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--ha-green);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.result__check {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ha-gold);
+    color: var(--ha-green-dark);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.result__list {
+    margin: 0;
+    padding: 4px 16px;
+}
+
+.result__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.result__row:last-child {
+    border-bottom: none;
+}
+
+.result__row dt {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.result__row dd {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+/* ---------- Footer ---------- */
+.page__footer {
+    width: 100%;
+    max-width: 460px;
+    padding: 0 20px 40px;
+    text-align: center;
+}
+
+.page__footer-text {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.page__footer-meta {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #9aa8a0;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+    .page__main {
+        padding: 28px 16px;
     }
 
-    .id-validator-container input[type="text"] {
-        width: 100%;
-        margin-bottom: 10px; /* Space between input and button on mobile */
+    .card__brand {
+        padding: 24px 20px 0;
     }
-}
-/* app.css */
 
-.id-validator-container .image-container {
-  text-align: center; /* Center the image in the container */
-  margin-bottom: 10px; /* Add space below the image */
-}
+    .card__body {
+        padding: 20px 20px 24px;
+    }
 
-.id-validator-container .image-container img {
-  width: 100px; /* Set your desired width */
-  height: auto; /* Maintain aspect ratio */
-  margin-bottom: 10px; /* Space below the image */
-}
-
-
-
-
-
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #FFFFFF;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: #006B3F;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    .card__title {
+        font-size: 1.3rem;
+    }
 }
