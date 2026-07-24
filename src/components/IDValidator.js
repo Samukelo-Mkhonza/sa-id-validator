@@ -50,8 +50,23 @@ function IDValidator() {
         validateIDNumber(idNumber);
     };
 
+    const handleClear = () => {
+        setIdNumber('');
+        setResult(null);
+        setError('');
+    };
+
+    const hasSomethingToClear = idNumber !== '' || result !== null || error !== '';
+
     return (
         <section className="card">
+            {isLoading && (
+                <div className="card__loading" role="status" aria-live="polite">
+                    <span className="spinner spinner--lg" aria-hidden="true" />
+                    <span className="card__loading-text">Validating ID number…</span>
+                </div>
+            )}
+
             <div className="card__brand">
                 <img
                     src={HomeAffairsLogo}
@@ -80,13 +95,30 @@ function IDValidator() {
                         onChange={handleChange}
                         autoComplete="off"
                     />
-                    <button
-                        type="submit"
-                        className="form__button"
-                        disabled={isLoading || idNumber.length !== 13}
-                    >
-                        {isLoading ? 'Validating…' : 'Validate'}
-                    </button>
+                    <div className="form__actions">
+                        <button
+                            type="submit"
+                            className="form__button"
+                            disabled={isLoading || idNumber.length !== 13}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <span className="spinner" aria-hidden="true" />
+                                    Validating…
+                                </>
+                            ) : (
+                                'Validate'
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className="form__button form__button--ghost"
+                            onClick={handleClear}
+                            disabled={isLoading || !hasSomethingToClear}
+                        >
+                            Clear
+                        </button>
+                    </div>
                 </form>
 
                 {error && (

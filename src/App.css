@@ -86,12 +86,62 @@
 
 /* ---------- Card ---------- */
 .card {
+    position: relative;
     width: 100%;
     max-width: 460px;
     background: var(--card);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     overflow: hidden;
+}
+
+/* Loading overlay shown while a validation request is in flight */
+.card__loading {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: var(--radius);
+}
+
+.card__loading-text {
+    font-weight: 600;
+    color: var(--ha-green);
+}
+
+/* Spinner */
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: -3px;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+.spinner--lg {
+    width: 42px;
+    height: 42px;
+    margin: 0;
+    border-width: 4px;
+    border-color: rgba(0, 107, 63, 0.2);
+    border-top-color: var(--ha-green);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .card__brand {
@@ -166,22 +216,36 @@
     box-shadow: 0 0 0 3px rgba(0, 107, 63, 0.15);
 }
 
-.form__button {
+.form__actions {
+    display: flex;
+    gap: 12px;
     margin-top: 16px;
+}
+
+.form__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 14px 20px;
     font-family: inherit;
     font-size: 1rem;
     font-weight: 600;
     color: #fff;
     background: var(--ha-green);
-    border: none;
+    border: 2px solid var(--ha-green);
     border-radius: 12px;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.05s ease, opacity 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.05s ease, opacity 0.2s ease;
+}
+
+/* Validate button takes the lead role and more width */
+.form__actions .form__button[type="submit"] {
+    flex: 1 1 auto;
 }
 
 .form__button:hover:not(:disabled) {
     background: var(--ha-green-dark);
+    border-color: var(--ha-green-dark);
 }
 
 .form__button:active:not(:disabled) {
@@ -191,6 +255,19 @@
 .form__button:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+}
+
+/* Secondary (Clear) button */
+.form__button--ghost {
+    flex: 0 0 auto;
+    color: var(--ha-green);
+    background: transparent;
+    border: 2px solid var(--line);
+}
+
+.form__button--ghost:hover:not(:disabled) {
+    background: #f0f6f2;
+    border-color: var(--ha-green);
 }
 
 /* ---------- Alert ---------- */
