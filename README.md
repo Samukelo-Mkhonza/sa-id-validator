@@ -53,6 +53,35 @@ exactly why it is useful for data-quality, pre-screening and fraud-signalling wo
 - Consent confirmation required before processing
 - Basic hardening: security headers, no-store caching, request size limit and a
   simple rate limiter
+- **Optional API-key auth** and an OpenAPI spec so other systems can integrate
+
+### Cross-list reconciliation
+- Upload **two** lists and find IDs present in both — e.g. a payroll employee who
+  is also a paid supplier (conflict of interest), or the same person in two grant
+  programmes (double-dipping). This is the kind of finding the Auditor-General
+  flags every year.
+
+### Aggregate demographics
+- After a bulk run, see an anonymous rollup (gender split, age bands, citizenship
+  mix) — the POPIA-friendly way to use ID data for planning, exposing no one.
+
+### Scan / barcode / MRZ extraction
+- Paste text from any scanner app, barcode reader or machine-readable zone and the
+  first valid 13-digit SA ID is extracted for you — removes the #1 typing error.
+
+### Synthetic ID generator (POPIA safeguard)
+- Generate fake-but-checksum-valid IDs so real citizens' numbers never end up in
+  dev, test or demo data.
+
+### Simulated identity verification (Tier C — mock only)
+- A pluggable verification **adapter** with a deterministic **mock** provider,
+  clearly tagged `simulated: true`. It exists to show how an accredited DHA
+  (HANIS/NPR) integration would slot in. **It is not a real verification.**
+
+### Localisation & accessibility
+- UI language switch across **English / isiZulu / Afrikaans** (translations are a
+  starting point — have them reviewed by a professional before production), plus
+  labelled form controls and a document `lang` attribute.
 
 ## Tech Stack
 
@@ -151,9 +180,69 @@ Validate a list of IDs and get per-row results plus batch fraud signals.
 }
 ```
 
+### `POST /reconcile`
+
+Find IDs present in both lists.
+
+```json
+{ "listA": ["8001015009087", "..."], "listB": ["...", "8001015009087"] }
+```
+Returns `{ summary: { overlapCount, ... }, matches: [ { idNumber, inA, inB, ... } ] }`.
+
+### `POST /extract-id`
+
+Pull a valid ID out of scanned/barcode/MRZ text.
+
+```json
+{ "text": "Surname: DLAMINI  ID No: 8001015009087" }
+```
+Returns `{ "found": true, "idNumber": "8001015009087", "validation": { ... } }`.
+
+### `POST /generate-id`
+
+Generate synthetic (fake-but-valid) IDs for testing.
+
+```json
+{ "count": 5, "gender": "Female", "minAge": 18, "maxAge": 65 }
+```
+Returns `{ "synthetic": true, "count": 5, "ids": [ ... ] }`.
+
+### `POST /verify-identity` — MOCK / simulation only
+
+Returns a deterministic **simulated** result tagged `"simulated": true`. Not a
+real Home Affairs check; do not use for any real decision.
+
+### `GET /audit/summary`
+
+PII-free rollup of the audit log (counts by outcome / source / code only).
+
+### `GET /openapi.json`
+
+The OpenAPI 3.0 specification for all endpoints.
+
 ### `GET /health`
 
 Returns `{ "status": "ok" }`.
+
+## Configuration (environment variables)
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `PORT` | Backend port | `3001` |
+| `REACT_APP_API_BASE` | API base URL the frontend calls | `http://localhost:3001` |
+| `ID_HASH_SALT` | Salt for hashing IDs in the audit log — **set a real secret in production** | insecure dev fallback |
+| `API_KEYS` | Comma-separated keys; if set, protected endpoints require an `x-api-key` header | unset (open dev mode) |
+| `AUDIT_RETENTION_DAYS` | Age after which audit entries are purged on startup | `90` |
+
+## Docker
+
+```bash
+docker build -t sa-id-validator .
+docker run -p 3001:3001 -e ID_HASH_SALT=change-me sa-id-validator
+```
+
+The image builds the React client and serves both the API and the static app from
+Express on port `3001`.
 
 ## How South African ID validation works
 

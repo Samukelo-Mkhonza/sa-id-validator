@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../i18n';
 
 // Base URL for the validation API. Overridable at build time so the same UI can
 // point at a deployed backend instead of the local dev server.
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
-// Parse pasted/loaded text into a list of ID numbers.
-// One record per line; the first comma/semicolon/tab-separated field is treated
-// as the ID. A leading header line (a first field with no digits) is skipped.
+// Parse pasted/loaded text into a list of ID numbers. One record per line; the
+// first comma/semicolon/tab-separated field is the ID. A leading header line
+// (first field with no digits) is skipped.
 function parseIds(text) {
     const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
     const ids = [];
@@ -25,7 +26,6 @@ function maskId(id) {
     return '•'.repeat(digits.length - 4) + digits.slice(-4);
 }
 
-// Build a CSV export from the validated rows + the original IDs.
 function toCSV(rows, ids) {
     const header = ['row', 'id_number', 'status', 'flags', 'DOB', 'age', 'gender', 'citizenship', 'reason'];
     const escape = (v) => {
@@ -50,10 +50,23 @@ function toCSV(rows, ids) {
     return [header.join(','), ...lines].join('\n');
 }
 
+// Simple horizontal bar for the demographics panel.
+function Bar({ label, value, total }) {
+    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+    return (
+        <div className="demo__row">
+            <span className="demo__label">{label}</span>
+            <span className="demo__track"><span className="demo__fill" style={{ width: `${pct}%` }} /></span>
+            <span className="demo__value">{value}</span>
+        </div>
+    );
+}
+
 function BulkValidator() {
+    const { t } = useI18n();
     const [text, setText] = useState('');
     const [consent, setConsent] = useState(false);
-    const [data, setData] = useState(null); // { summary, rows }
+    const [data, setData] = useState(null);
     const [parsedIds, setParsedIds] = useState([]);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +80,26 @@ function BulkValidator() {
         const reader = new FileReader();
         reader.onload = () => setText(String(reader.result || ''));
         reader.readAsText(file);
-        e.target.value = ''; // allow re-selecting the same file
+        e.target.value = '';
+    };
+
+    const insertSamples = async () => {
+        try {
+            const response = await fetch(`${API_BASE}/generate-id`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ count: 8 }),
+            });
+            const body = await response.json();
+            if (body.ids) {
+                // Include a deliberate duplicate so the fraud flag is visible in the demo.
+                const withDup = [...body.ids, body.ids[0]];
+                setText((prev) => (prev ? prev + '\n' : '') + withDup.join('\n'));
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Could not reach the generator service.');
+        }
     };
 
     const runBatch = async () => {
@@ -111,27 +143,26 @@ function BulkValidator() {
     };
 
     const canSubmit = ids.length > 0 && consent && !isLoading;
+    const demo = data && data.demographics;
 
     return (
         <section className="card card--wide">
             {isLoading && (
                 <div className="card__loading" role="status" aria-live="polite">
                     <span className="spinner spinner--lg" aria-hidden="true" />
-                    <span className="card__loading-text">Validating batch…</span>
+                    <span className="card__loading-text">{t('validating')}</span>
                 </div>
             )}
 
             <div className="card__body">
-                <h1 className="card__title">Bulk ID Validation</h1>
+                <h1 className="card__title">{t('bulkTitle')}</h1>
                 <p className="card__subtitle">
-                    Check a whole list at once — payroll, grant beneficiaries or vendor
-                    records. Flags malformed IDs and <strong>duplicates</strong> (the
-                    classic ghost-employee / double-dipping signal).
+                    {t('bulkSubtitle')} <strong>{'('}</strong>duplicates = ghost-employee / double-dipping signal<strong>{')'}</strong>
                 </p>
 
                 <div className="bulk__inputs">
                     <label htmlFor="bulk-text" className="form__label">
-                        ID numbers ({ids.length} detected)
+                        {t('idLabel')} ({ids.length})
                     </label>
                     <textarea
                         id="bulk-text"
@@ -144,13 +175,11 @@ function BulkValidator() {
                     <div className="bulk__file">
                         <label className="form__button form__button--ghost bulk__file-btn">
                             Upload .csv / .txt
-                            <input
-                                type="file"
-                                accept=".csv,.txt,text/csv,text/plain"
-                                onChange={handleFile}
-                                hidden
-                            />
+                            <input type="file" accept=".csv,.txt,text/csv,text/plain" onChange={handleFile} hidden />
                         </label>
+                        <button type="button" className="form__button form__button--ghost bulk__file-btn" onClick={insertSamples}>
+                            {t('insertSamples')}
+                        </button>
                         <span className="bulk__hint">First column is used as the ID; a header row is ignored.</span>
                     </div>
                 </div>
@@ -162,14 +191,12 @@ function BulkValidator() {
                         checked={consent}
                         onChange={(e) => setConsent(e.target.checked)}
                     />
-                    <span className="consent__text">
-                        I confirm I have a lawful basis to process these ID numbers (POPIA).
-                    </span>
+                    <span className="consent__text">{t('consent')}</span>
                 </label>
 
                 <div className="form__actions">
                     <button type="button" className="form__button" onClick={runBatch} disabled={!canSubmit}>
-                        {isLoading ? 'Validating…' : `Validate ${ids.length || ''} record${ids.length === 1 ? '' : 's'}`}
+                        {isLoading ? t('validating') : `${t('validate')} (${ids.length})`}
                     </button>
                     <button
                         type="button"
@@ -181,7 +208,7 @@ function BulkValidator() {
                         }}
                         disabled={isLoading || (text === '' && !data)}
                     >
-                        Clear
+                        {t('clear')}
                     </button>
                 </div>
 
@@ -198,22 +225,36 @@ function BulkValidator() {
                             <span className="chip">Total <b>{data.summary.total}</b></span>
                             <span className="chip chip--ok">Valid <b>{data.summary.valid}</b></span>
                             <span className="chip chip--bad">Invalid <b>{data.summary.invalid}</b></span>
-                            <span className="chip chip--warn">
-                                Duplicates <b>{data.summary.duplicateRowCount}</b>
-                            </span>
+                            <span className="chip chip--warn">Duplicates <b>{data.summary.duplicateRowCount}</b></span>
                         </div>
+
+                        {demo && demo.valid > 0 && (
+                            <div className="demo">
+                                <h2 className="grants__title">{t('demographicsTitle')}</h2>
+                                <div className="demo__cols">
+                                    <div className="demo__group">
+                                        <Bar label={t('gender')} value={demo.gender.Male} total={demo.valid} />
+                                        <div className="demo__sub">
+                                            <span>Male {demo.gender.Male}</span>
+                                            <span>Female {demo.gender.Female}</span>
+                                        </div>
+                                    </div>
+                                    <div className="demo__group">
+                                        {Object.entries(demo.ageBands).map(([band, n]) => (
+                                            <Bar key={band} label={band} value={n} total={demo.valid} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="bulk__toolbar">
                             <label className="bulk__reveal">
-                                <input
-                                    type="checkbox"
-                                    checked={reveal}
-                                    onChange={(e) => setReveal(e.target.checked)}
-                                />
-                                Show full IDs
+                                <input type="checkbox" checked={reveal} onChange={(e) => setReveal(e.target.checked)} />
+                                {t('showFullIds')}
                             </label>
                             <button type="button" className="form__button form__button--ghost bulk__download" onClick={downloadCSV}>
-                                Download results (CSV)
+                                {t('downloadCsv')}
                             </button>
                         </div>
 
@@ -222,12 +263,12 @@ function BulkValidator() {
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>ID number</th>
+                                        <th>{t('idLabel')}</th>
                                         <th>Status</th>
                                         <th>Flags</th>
-                                        <th>DOB</th>
-                                        <th>Age</th>
-                                        <th>Gender</th>
+                                        <th>{t('dob')}</th>
+                                        <th>{t('age')}</th>
+                                        <th>{t('gender')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

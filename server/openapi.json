@@ -1,0 +1,160 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "South African ID Validator API",
+    "version": "1.0.0",
+    "description": "Structural validation, bulk fraud checks, reconciliation, demographics, grant pre-screening and a MOCK identity-verification adapter. A valid result means 'well-formed', not 'verified against Home Affairs'."
+  },
+  "servers": [{ "url": "http://localhost:3001" }],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": { "type": "apiKey", "in": "header", "name": "x-api-key" }
+    }
+  },
+  "security": [{ "ApiKeyAuth": [] }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Liveness probe",
+        "security": [],
+        "responses": { "200": { "description": "Service is up" } }
+      }
+    },
+    "/validate-id": {
+      "post": {
+        "summary": "Validate a single ID number",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["idNumber"],
+                "properties": {
+                  "idNumber": { "type": "string", "example": "8001015009087" },
+                  "consent": { "type": "boolean" },
+                  "includeGrants": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Well-formed ID with decoded details" },
+          "400": { "description": "Invalid ID (see code/reason)" }
+        }
+      }
+    },
+    "/validate-bulk": {
+      "post": {
+        "summary": "Validate a list of IDs; flags duplicates and returns demographics",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["idNumbers"],
+                "properties": {
+                  "idNumbers": { "type": "array", "items": { "type": "string" } },
+                  "consent": { "type": "boolean" },
+                  "includeGrants": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Per-row results, summary and demographics" } }
+      }
+    },
+    "/reconcile": {
+      "post": {
+        "summary": "Find IDs present in BOTH of two lists (conflict-of-interest / double-dipping)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["listA", "listB"],
+                "properties": {
+                  "listA": { "type": "array", "items": { "type": "string" } },
+                  "listB": { "type": "array", "items": { "type": "string" } },
+                  "consent": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Overlap summary and matched IDs" } }
+      }
+    },
+    "/extract-id": {
+      "post": {
+        "summary": "Extract a valid ID from scanned / barcode / MRZ text",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["text"],
+                "properties": { "text": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Extraction result (found / not found)" } }
+      }
+    },
+    "/generate-id": {
+      "post": {
+        "summary": "Generate synthetic (fake-but-valid) IDs for testing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "count": { "type": "integer", "default": 1, "maximum": 10000 },
+                  "gender": { "type": "string", "enum": ["Male", "Female"] },
+                  "minAge": { "type": "integer" },
+                  "maxAge": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "A list of synthetic ID numbers" } }
+      }
+    },
+    "/verify-identity": {
+      "post": {
+        "summary": "MOCK identity verification adapter (Tier C simulation — NOT a real DHA check)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["idNumber"],
+                "properties": {
+                  "idNumber": { "type": "string" },
+                  "firstName": { "type": "string" },
+                  "lastName": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Simulated verification result (simulated: true)" } }
+      }
+    },
+    "/audit/summary": {
+      "get": {
+        "summary": "PII-free rollup of the audit log (counts only)",
+        "responses": { "200": { "description": "Aggregate counts by outcome / source / code" } }
+      }
+    }
+  }
+}

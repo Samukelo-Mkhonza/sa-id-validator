@@ -63,4 +63,56 @@ const logVerification = (event) => {
     return entry;
 };
 
-module.exports = { maskId, hashId, logVerification, AUDIT_LOG_PATH };
+// POPIA data-minimisation: don't keep records forever. Rewrites the log with
+// only entries newer than `maxAgeDays`. Returns the number of entries removed.
+const purgeOldAuditEntries = (maxAgeDays = 90) => {
+    if (!fs.existsSync(AUDIT_LOG_PATH)) return 0;
+    const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+    let removed = 0;
+    const kept = [];
+    const lines = fs.readFileSync(AUDIT_LOG_PATH, 'utf8').split('\n').filter(Boolean);
+    for (const line of lines) {
+        try {
+            const entry = JSON.parse(line);
+            if (new Date(entry.ts).getTime() >= cutoff) kept.push(line);
+            else removed++;
+        } catch {
+            // Skip unparseable lines rather than crash on a corrupt log.
+            removed++;
+        }
+    }
+    fs.writeFileSync(AUDIT_LOG_PATH, kept.length ? kept.join('\n') + '\n' : '');
+    return removed;
+};
+
+// PII-free rollup of the audit log for a governance/monitoring view. Counts only
+// — never returns hashes, masked IDs or timestamps of individuals.
+const readAuditSummary = () => {
+    const summary = { total: 0, valid: 0, invalid: 0, bySource: {}, byCode: {} };
+    if (!fs.existsSync(AUDIT_LOG_PATH)) return summary;
+    const lines = fs.readFileSync(AUDIT_LOG_PATH, 'utf8').split('\n').filter(Boolean);
+    for (const line of lines) {
+        let entry;
+        try {
+            entry = JSON.parse(line);
+        } catch {
+            continue;
+        }
+        summary.total++;
+        if (entry.outcome === 'valid') summary.valid++;
+        else summary.invalid++;
+        const src = entry.source || 'unknown';
+        summary.bySource[src] = (summary.bySource[src] || 0) + 1;
+        if (entry.code) summary.byCode[entry.code] = (summary.byCode[entry.code] || 0) + 1;
+    }
+    return summary;
+};
+
+module.exports = {
+    maskId,
+    hashId,
+    logVerification,
+    purgeOldAuditEntries,
+    readAuditSummary,
+    AUDIT_LOG_PATH,
+};

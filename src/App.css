@@ -681,6 +681,187 @@
     white-space: normal;
 }
 
+/* ---------- Language switch ---------- */
+.stack__header {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.langswitch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px 6px 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+}
+
+.langswitch__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.langswitch__select {
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    color: var(--ink);
+    background: #f0f6f2;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.langswitch__select:focus {
+    outline: none;
+    border-color: var(--ha-green);
+}
+
+/* ---------- Scan / barcode panel ---------- */
+.scan {
+    margin-top: 12px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+
+.scan__summary {
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ha-green);
+}
+
+.scan__textarea {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px 12px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 0.85rem;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    resize: vertical;
+    outline: none;
+}
+
+.scan__textarea:focus {
+    border-color: var(--ha-green);
+}
+
+.scan__button {
+    margin-top: 8px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+}
+
+.scan__error {
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: var(--danger);
+}
+
+/* ---------- Simulated verification ---------- */
+.verify {
+    padding: 4px 16px 16px;
+}
+
+.verify__box {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: #fff8e1;
+    border: 1px solid #f0d98a;
+    border-radius: 10px;
+}
+
+.verify__row {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 6px;
+    font-size: 0.9rem;
+}
+
+.verify__disclaimer {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #7a5b00;
+}
+
+/* ---------- Demographics ---------- */
+.demo {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.demo__cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.demo__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+}
+
+.demo__label {
+    flex: 0 0 64px;
+    color: var(--muted);
+}
+
+.demo__track {
+    flex: 1;
+    height: 10px;
+    background: #eef3f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.demo__fill {
+    display: block;
+    height: 100%;
+    background: var(--ha-green);
+    border-radius: 999px;
+}
+
+.demo__value {
+    flex: 0 0 auto;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.demo__sub {
+    display: flex;
+    gap: 14px;
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+/* ---------- Reconcile ---------- */
+.reconcile__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .demo__cols,
+    .reconcile__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 480px) {
     .page__main {

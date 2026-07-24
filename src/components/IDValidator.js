@@ -1,38 +1,41 @@
 import React, { useState } from 'react';
 import HomeAffairsLogo from '../images/home-affairs-logo.png';
+import { useI18n } from '../i18n';
 
 // Base URL for the validation API. Overridable at build time so the same UI can
 // point at a deployed backend instead of the local dev server.
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
 function IDValidator() {
+    const { t } = useI18n();
     const [idNumber, setIdNumber] = useState('');
     const [consent, setConsent] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const [scanText, setScanText] = useState('');
+    const [scanError, setScanError] = useState('');
+
+    const [verify, setVerify] = useState(null);
+    const [verifyLoading, setVerifyLoading] = useState(false);
+
     const validateIDNumber = async (idNumber) => {
         setError('');
         setResult(null);
+        setVerify(null);
         setIsLoading(true);
 
         try {
             const response = await fetch(`${API_BASE}/validate-id`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ idNumber, consent, includeGrants: true }),
             });
 
             const data = await response.json();
-            if (response.ok) {
-                if (data.isValid) {
-                    setResult(data);
-                } else {
-                    setError(data.reason || 'Invalid ID number. Please check the format and try again.');
-                }
+            if (response.ok && data.isValid) {
+                setResult(data);
             } else {
                 setError(data.reason || data.message || 'Invalid ID number. Please check the format and try again.');
             }
@@ -44,8 +47,46 @@ function IDValidator() {
         }
     };
 
+    const extractFromScan = async () => {
+        setScanError('');
+        try {
+            const response = await fetch(`${API_BASE}/extract-id`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: scanText }),
+            });
+            const data = await response.json();
+            if (data.found) {
+                setIdNumber(data.idNumber);
+                setScanError('');
+            } else {
+                setScanError(data.reason || 'No valid ID found in the text.');
+            }
+        } catch (err) {
+            console.error(err);
+            setScanError('Could not reach the extraction service.');
+        }
+    };
+
+    const runVerify = async () => {
+        setVerifyLoading(true);
+        setVerify(null);
+        try {
+            const response = await fetch(`${API_BASE}/verify-identity`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idNumber }),
+            });
+            setVerify(await response.json());
+        } catch (err) {
+            console.error(err);
+            setVerify({ error: 'Could not reach the verification service.' });
+        } finally {
+            setVerifyLoading(false);
+        }
+    };
+
     const handleChange = (e) => {
-        // Keep only digits and cap at 13 characters.
         const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 13);
         setIdNumber(digitsOnly);
     };
@@ -59,6 +100,9 @@ function IDValidator() {
         setIdNumber('');
         setResult(null);
         setError('');
+        setVerify(null);
+        setScanText('');
+        setScanError('');
     };
 
     const hasSomethingToClear = idNumber !== '' || result !== null || error !== '';
@@ -70,7 +114,7 @@ function IDValidator() {
             {isLoading && (
                 <div className="card__loading" role="status" aria-live="polite">
                     <span className="spinner spinner--lg" aria-hidden="true" />
-                    <span className="card__loading-text">Validating ID number…</span>
+                    <span className="card__loading-text">{t('validating')}</span>
                 </div>
             )}
 
@@ -83,14 +127,11 @@ function IDValidator() {
             </div>
 
             <div className="card__body">
-                <h1 className="card__title">South African ID Validator</h1>
-                <p className="card__subtitle">
-                    Enter a 13-digit ID number to verify its checksum and view the
-                    encoded details.
-                </p>
+                <h1 className="card__title">{t('appTitle')}</h1>
+                <p className="card__subtitle">{t('singleSubtitle')}</p>
 
                 <form onSubmit={handleSubmit} className="form">
-                    <label htmlFor="id-input" className="form__label">ID Number</label>
+                    <label htmlFor="id-input" className="form__label">{t('idLabel')}</label>
                     <input
                         id="id-input"
                         className="form__input"
@@ -103,6 +144,26 @@ function IDValidator() {
                         autoComplete="off"
                     />
 
+                    <details className="scan">
+                        <summary className="scan__summary">{t('scanTitle')}</summary>
+                        <textarea
+                            className="scan__textarea"
+                            rows={3}
+                            placeholder="Paste scanned barcode / MRZ text here"
+                            value={scanText}
+                            onChange={(e) => setScanText(e.target.value)}
+                        />
+                        <button
+                            type="button"
+                            className="form__button form__button--ghost scan__button"
+                            onClick={extractFromScan}
+                            disabled={scanText.trim() === ''}
+                        >
+                            {t('scanExtract')}
+                        </button>
+                        {scanError && <p className="scan__error">{scanError}</p>}
+                    </details>
+
                     <label className="consent">
                         <input
                             type="checkbox"
@@ -110,25 +171,18 @@ function IDValidator() {
                             checked={consent}
                             onChange={(e) => setConsent(e.target.checked)}
                         />
-                        <span className="consent__text">
-                            I confirm I have the person’s consent, or a lawful basis, to
-                            process this ID number (POPIA).
-                        </span>
+                        <span className="consent__text">{t('consent')}</span>
                     </label>
 
                     <div className="form__actions">
-                        <button
-                            type="submit"
-                            className="form__button"
-                            disabled={!canSubmit}
-                        >
+                        <button type="submit" className="form__button" disabled={!canSubmit}>
                             {isLoading ? (
                                 <>
                                     <span className="spinner" aria-hidden="true" />
-                                    Validating…
+                                    {t('validating')}
                                 </>
                             ) : (
-                                'Validate'
+                                t('validate')
                             )}
                         </button>
                         <button
@@ -137,7 +191,7 @@ function IDValidator() {
                             onClick={handleClear}
                             disabled={isLoading || !hasSomethingToClear}
                         >
-                            Clear
+                            {t('clear')}
                         </button>
                     </div>
                 </form>
@@ -153,41 +207,29 @@ function IDValidator() {
                     <div className="result" role="status">
                         <div className="result__badge">
                             <span className="result__check" aria-hidden="true">✓</span>
-                            Well-formed South African ID number
+                            {t('resultValid')}
                         </div>
                         <dl className="result__list">
-                            <div className="result__row">
-                                <dt>Date of Birth</dt>
-                                <dd>{result.DOB}</dd>
-                            </div>
-                            <div className="result__row">
-                                <dt>Gender</dt>
-                                <dd>{result.gender}</dd>
-                            </div>
-                            <div className="result__row">
-                                <dt>Citizenship</dt>
-                                <dd>{result.citizenship}</dd>
-                            </div>
-                            <div className="result__row">
-                                <dt>Age</dt>
-                                <dd>{result.age} years</dd>
-                            </div>
+                            <div className="result__row"><dt>{t('dob')}</dt><dd>{result.DOB}</dd></div>
+                            <div className="result__row"><dt>{t('gender')}</dt><dd>{result.gender}</dd></div>
+                            <div className="result__row"><dt>{t('citizenship')}</dt><dd>{result.citizenship}</dd></div>
+                            <div className="result__row"><dt>{t('age')}</dt><dd>{result.age} years</dd></div>
                         </dl>
 
                         {result.birthDateAmbiguous && (
                             <div className="alert alert--warn" role="note">
                                 <span className="alert__icon alert__icon--warn" aria-hidden="true">i</span>
                                 <span>
-                                    The two-digit year is ambiguous (could be last century).
-                                    The most recent reading is shown — confirm the real date
-                                    of birth against an official record.
+                                    The two-digit year is ambiguous (could be last century). The
+                                    most recent reading is shown — confirm the real date of birth
+                                    against an official record.
                                 </span>
                             </div>
                         )}
 
                         {grants.length > 0 && (
                             <div className="grants">
-                                <h2 className="grants__title">Age-based grant indicators</h2>
+                                <h2 className="grants__title">{t('grantsTitle')}</h2>
                                 <ul className="grants__list">
                                     {grants.map((g) => (
                                         <li key={g.grant} className="grants__item">
@@ -202,6 +244,31 @@ function IDValidator() {
                                 </p>
                             </div>
                         )}
+
+                        <div className="verify">
+                            <h2 className="grants__title">{t('verifyTitle')}</h2>
+                            <button
+                                type="button"
+                                className="form__button form__button--ghost"
+                                onClick={runVerify}
+                                disabled={verifyLoading}
+                            >
+                                {verifyLoading ? t('validating') : t('verifyRun')}
+                            </button>
+                            {verify && !verify.error && (
+                                <div className="verify__box">
+                                    <p className="verify__row">
+                                        <span>ID exists (simulated)</span>
+                                        <b>{verify.idExists ? 'Yes' : 'No'}</b>
+                                    </p>
+                                    {verify.status && (
+                                        <p className="verify__row"><span>Status</span><b>{verify.status}</b></p>
+                                    )}
+                                    <p className="verify__disclaimer">⚠ {verify.disclaimer}</p>
+                                </div>
+                            )}
+                            {verify && verify.error && <p className="scan__error">{verify.error}</p>}
+                        </div>
                     </div>
                 )}
             </div>
