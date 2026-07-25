@@ -767,6 +767,30 @@
     font-size: 0.92rem;
 }
 
+.scan__upload {
+    width: 100%;
+    margin-top: 8px;
+    padding: 11px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.scan__upload.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.scan__status {
+    margin: 10px 0 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ha-green);
+    text-align: center;
+}
+
 .scan__note {
     margin: 8px 0 0;
     font-size: 0.75rem;

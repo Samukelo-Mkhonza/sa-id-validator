@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import HomeAffairsLogo from '../images/home-affairs-logo.png';
 import { useI18n } from '../i18n';
 import CameraScanner from './CameraScanner';
+import { decodeBarcodeFromImageUrl } from '../decodeImage';
 
 // Base URL for the validation API. Overridable at build time so the same UI can
 // point at a deployed backend instead of the local dev server.
@@ -18,6 +19,8 @@ function IDValidator() {
     const [scanText, setScanText] = useState('');
     const [scanError, setScanError] = useState('');
     const [scanning, setScanning] = useState(false);
+    const [imgBusy, setImgBusy] = useState(false);
+    const [imgStatus, setImgStatus] = useState('');
 
     const [verify, setVerify] = useState(null);
     const [verifyLoading, setVerifyLoading] = useState(false);
@@ -81,6 +84,67 @@ function IDValidator() {
         },
         [runExtraction]
     );
+
+    // Ask the server to pull a valid ID out of some text. Returns the parsed
+    // response ({ found, idNumber, ... }) or a not-found object on failure.
+    const extractViaServer = async (text) => {
+        try {
+            const response = await fetch(`${API_BASE}/extract-id`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            });
+            return await response.json();
+        } catch (err) {
+            console.error(err);
+            return { found: false };
+        }
+    };
+
+    // Upload a photo of an ID and extract the number: try to decode a barcode
+    // first (exact), then fall back to OCR of the printed number.
+    const handleImageUpload = async (file) => {
+        if (!file) return;
+        setScanError('');
+        setImgBusy(true);
+        const url = URL.createObjectURL(file);
+        try {
+            // 1) Barcode in the image (e.g. the back of the card / a printed barcode).
+            setImgStatus(t('imgReading'));
+            const barcodeText = await decodeBarcodeFromImageUrl(url);
+            if (barcodeText) {
+                const fromBarcode = await extractViaServer(barcodeText);
+                if (fromBarcode.found) {
+                    setIdNumber(fromBarcode.idNumber);
+                    return;
+                }
+            }
+
+            // 2) OCR fallback — read the printed number off the front of the card.
+            setImgStatus(`${t('imgOcr')} 0%`);
+            const Tesseract = (await import('tesseract.js')).default;
+            const { data } = await Tesseract.recognize(url, 'eng', {
+                logger: (m) => {
+                    if (m.status === 'recognizing text') {
+                        setImgStatus(`${t('imgOcr')} ${Math.round((m.progress || 0) * 100)}%`);
+                    }
+                },
+            });
+            const fromOcr = await extractViaServer(data && data.text ? data.text : '');
+            if (fromOcr.found) {
+                setIdNumber(fromOcr.idNumber);
+            } else {
+                setScanError(t('scanNotFound'));
+            }
+        } catch (err) {
+            console.error(err);
+            setScanError('Could not read the image. Please try a clearer photo or type the number.');
+        } finally {
+            URL.revokeObjectURL(url);
+            setImgBusy(false);
+            setImgStatus('');
+        }
+    };
 
     const runVerify = async () => {
         setVerifyLoading(true);
@@ -168,9 +232,27 @@ function IDValidator() {
                                 setScanError('');
                                 setScanning(true);
                             }}
+                            disabled={imgBusy}
                         >
                             📷 {t('scanCamera')}
                         </button>
+
+                        <label className={`form__button form__button--ghost scan__upload ${imgBusy ? 'is-disabled' : ''}`}>
+                            🖼️ {t('uploadImage')}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                disabled={imgBusy}
+                                onChange={(e) => {
+                                    const file = e.target.files && e.target.files[0];
+                                    e.target.value = '';
+                                    if (file) handleImageUpload(file);
+                                }}
+                            />
+                        </label>
+
+                        {imgBusy && <p className="scan__status" role="status">{imgStatus}</p>}
                         <p className="scan__note">{t('scanCameraNote')}</p>
 
                         <div className="scan__or">{t('scanOr')}</div>

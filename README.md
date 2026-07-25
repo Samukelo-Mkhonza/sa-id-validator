@@ -65,15 +65,25 @@ exactly why it is useful for data-quality, pre-screening and fraud-signalling wo
 - After a bulk run, see an anonymous rollup (gender split, age bands, citizenship
   mix) — the POPIA-friendly way to use ID data for planning, exposing no one.
 
-### Camera & barcode scanning
-- **Scan with the device camera** (via ZXing) — point it at the barcode on an ID
-  or document and the ID number is decoded and filled in for you, removing the #1
-  typing error. Also accepts pasted scanner/barcode/MRZ **text**.
-- Decodes barcodes that carry the ID in plain text (the older green ID book, or an
-  ID printed as a barcode on a form). **Note:** the new smart-ID-card PDF417 is
-  encrypted and may not yield a readable number.
-- The camera needs a **secure context** — `https://` in production, or `localhost`
-  during development — and a Chromium/Firefox/Safari browser with camera access.
+### Capture an ID (camera, photo upload, barcode, OCR)
+Three ways to get the number in without typing it, all feeding the same
+extract → validate pipeline:
+- **Scan with the device camera** (ZXing) — point it at the barcode and the ID is
+  decoded live.
+- **Upload a photo of the ID** — the image is first checked for a **barcode**
+  (exact); if none is found it falls back to **OCR** (Tesseract.js) to read the
+  printed number off the front of the card.
+- **Paste** scanner / barcode / MRZ **text**.
+
+Notes:
+- Barcode decoding works when the code carries the ID in plain text (the older
+  green ID book, or an ID printed as a barcode). The **new smart-ID-card PDF417 is
+  encrypted** and may not be readable — that's when the OCR fallback helps.
+- OCR is best-effort: **check the extracted number**, especially with glare or a
+  low-resolution photo.
+- Tesseract.js downloads its recognition model at runtime (first use needs
+  internet). The live camera needs a **secure context** — `https://` in
+  production, or `localhost` in development.
 
 ### Synthetic ID generator (POPIA safeguard)
 - Generate fake-but-checksum-valid IDs so real citizens' numbers never end up in
@@ -91,7 +101,7 @@ exactly why it is useful for data-quality, pre-screening and fraud-signalling wo
 
 ## Tech Stack
 
-**Frontend:** React 18, plain CSS (Home Affairs colour scheme), `@zxing/browser` for camera barcode scanning
+**Frontend:** React 18, plain CSS (Home Affairs colour scheme), `@zxing/browser` (barcode scanning), `tesseract.js` (OCR)
 **Backend:** Node.js, Express, no runtime dependencies for the validation logic
 **Tests:** Node's built-in test runner (`node:test`) — no extra tooling
 
