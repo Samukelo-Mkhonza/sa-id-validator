@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import HomeAffairsLogo from '../images/home-affairs-logo.png';
 import { useI18n } from '../i18n';
+import CameraScanner from './CameraScanner';
 
 // Base URL for the validation API. Overridable at build time so the same UI can
 // point at a deployed backend instead of the local dev server.
@@ -16,6 +17,7 @@ function IDValidator() {
 
     const [scanText, setScanText] = useState('');
     const [scanError, setScanError] = useState('');
+    const [scanning, setScanning] = useState(false);
 
     const [verify, setVerify] = useState(null);
     const [verifyLoading, setVerifyLoading] = useState(false);
@@ -47,26 +49,38 @@ function IDValidator() {
         }
     };
 
-    const extractFromScan = async () => {
+    // Send scanned/pasted text to the extraction endpoint and, if a valid ID is
+    // found, drop it into the input. Shared by the camera scanner and the
+    // paste-text fallback.
+    const runExtraction = useCallback(async (text) => {
         setScanError('');
+        if (!text || text.trim() === '') return;
         try {
             const response = await fetch(`${API_BASE}/extract-id`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: scanText }),
+                body: JSON.stringify({ text }),
             });
             const data = await response.json();
             if (data.found) {
                 setIdNumber(data.idNumber);
                 setScanError('');
             } else {
-                setScanError(data.reason || 'No valid ID found in the text.');
+                setScanError(t('scanNotFound'));
             }
         } catch (err) {
             console.error(err);
             setScanError('Could not reach the extraction service.');
         }
-    };
+    }, [t]);
+
+    const handleScanResult = useCallback(
+        (text) => {
+            setScanning(false);
+            runExtraction(text);
+        },
+        [runExtraction]
+    );
 
     const runVerify = async () => {
         setVerifyLoading(true);
@@ -146,6 +160,20 @@ function IDValidator() {
 
                     <details className="scan">
                         <summary className="scan__summary">{t('scanTitle')}</summary>
+
+                        <button
+                            type="button"
+                            className="form__button scan__camera"
+                            onClick={() => {
+                                setScanError('');
+                                setScanning(true);
+                            }}
+                        >
+                            📷 {t('scanCamera')}
+                        </button>
+                        <p className="scan__note">{t('scanCameraNote')}</p>
+
+                        <div className="scan__or">{t('scanOr')}</div>
                         <textarea
                             className="scan__textarea"
                             rows={3}
@@ -156,7 +184,7 @@ function IDValidator() {
                         <button
                             type="button"
                             className="form__button form__button--ghost scan__button"
-                            onClick={extractFromScan}
+                            onClick={() => runExtraction(scanText)}
                             disabled={scanText.trim() === ''}
                         >
                             {t('scanExtract')}
@@ -272,6 +300,16 @@ function IDValidator() {
                     </div>
                 )}
             </div>
+
+            {scanning && (
+                <CameraScanner
+                    onResult={handleScanResult}
+                    onClose={() => setScanning(false)}
+                    label={t('scanCamera')}
+                    hint={t('scanPoint')}
+                    closeLabel={t('scanClose')}
+                />
+            )}
         </section>
     );
 }

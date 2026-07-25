@@ -65,9 +65,15 @@ exactly why it is useful for data-quality, pre-screening and fraud-signalling wo
 - After a bulk run, see an anonymous rollup (gender split, age bands, citizenship
   mix) — the POPIA-friendly way to use ID data for planning, exposing no one.
 
-### Scan / barcode / MRZ extraction
-- Paste text from any scanner app, barcode reader or machine-readable zone and the
-  first valid 13-digit SA ID is extracted for you — removes the #1 typing error.
+### Camera & barcode scanning
+- **Scan with the device camera** (via ZXing) — point it at the barcode on an ID
+  or document and the ID number is decoded and filled in for you, removing the #1
+  typing error. Also accepts pasted scanner/barcode/MRZ **text**.
+- Decodes barcodes that carry the ID in plain text (the older green ID book, or an
+  ID printed as a barcode on a form). **Note:** the new smart-ID-card PDF417 is
+  encrypted and may not yield a readable number.
+- The camera needs a **secure context** — `https://` in production, or `localhost`
+  during development — and a Chromium/Firefox/Safari browser with camera access.
 
 ### Synthetic ID generator (POPIA safeguard)
 - Generate fake-but-checksum-valid IDs so real citizens' numbers never end up in
@@ -85,7 +91,7 @@ exactly why it is useful for data-quality, pre-screening and fraud-signalling wo
 
 ## Tech Stack
 
-**Frontend:** React 18, plain CSS (Home Affairs colour scheme)
+**Frontend:** React 18, plain CSS (Home Affairs colour scheme), `@zxing/browser` for camera barcode scanning
 **Backend:** Node.js, Express, no runtime dependencies for the validation logic
 **Tests:** Node's built-in test runner (`node:test`) — no extra tooling
 
@@ -281,17 +287,27 @@ npm test              # React component tests (CRA/Jest)
 sa-id-validator/
 ├── src/                         # React frontend
 │   ├── components/
-│   │   ├── IDValidator.js       # Single-ID validation + grants + consent
-│   │   └── BulkValidator.js     # CSV/paste batch validation + results table
-│   ├── App.js                   # Tabs (single / bulk), layout, footer
+│   │   ├── IDValidator.js       # Single-ID validation + grants + consent + scan
+│   │   ├── BulkValidator.js     # Batch validation, demographics, results table
+│   │   ├── ReconcileValidator.js# Cross-list overlap detection
+│   │   └── CameraScanner.js     # Live camera barcode scanning (ZXing)
+│   ├── i18n.js                  # English / isiZulu / Afrikaans strings + context
+│   ├── App.js                   # Tabs, language switch, layout, footer
 │   └── App.css                  # Styles
 ├── server/                      # Express backend
-│   ├── index.js                 # Routes, security headers, rate limit, audit
+│   ├── index.js                 # Routes, security headers, rate limit, auth, audit
 │   ├── validateId.js            # Core validation logic
 │   ├── grantEligibility.js      # SASSA age-based grant indicators
 │   ├── bulkValidate.js          # Batch validation + duplicate detection
-│   ├── privacy.js               # Masking, hashing, POPIA audit log
-│   └── *.test.js                # node:test unit tests
+│   ├── reconcile.js             # Cross-list reconciliation
+│   ├── demographics.js          # Aggregate (anonymous) demographics
+│   ├── barcode.js               # Extract an ID from scanned/barcode/MRZ text
+│   ├── generateId.js            # Synthetic (fake-but-valid) ID generator
+│   ├── verificationProvider.js  # MOCK DHA verification adapter (Tier C)
+│   ├── privacy.js               # Masking, hashing, POPIA audit log + retention
+│   ├── openapi.json             # API specification
+│   └── *.test.js                # node:test unit + API tests
+├── Dockerfile                   # Builds client + serves everything from Express
 ├── package.json
 └── README.md
 ```
