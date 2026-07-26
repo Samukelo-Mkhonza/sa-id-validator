@@ -2,7 +2,7 @@
   "name": "sa-id-validator",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/sa-id-validator",
+  "homepage": "https://samukelo-mkhonza.github.io/sa-id-validator",
   "dependencies": {
     "@cloudscape-design/components": "^3.0.574",
     "@testing-library/jest-dom": "^5.17.0",
@@ -46,7 +46,7 @@
       "last 1 safari version"
     ]
   },
-  "description": "Full-stack South African ID validation with bulk/fraud checks, SASSA grant pre-screening, and POPIA-conscious auditing.",
+  "description": "Full-stack South African ID validation with bulk/fraud checks, SASSA grant pre-screening, and POPIA-conscious auditing. Live demo: https://samukelo-mkhonza.github.io/sa-id-validator/",
   "main": "server/index.js",
   "keywords": [
     "south-africa",

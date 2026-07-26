@@ -5,6 +5,14 @@ ID, validate a whole list (with fraud/duplicate flags), derive age-based social
 grant indicators, and keep a POPIA-conscious audit trail — all without depending
 on any external identity service.
 
+**🔗 Live demo:** https://samukelo-mkhonza.github.io/sa-id-validator/
+
+> The hosted demo is the **frontend only** (GitHub Pages is static). The UI loads,
+> but validation and other API-backed features need the Express backend running —
+> point the deployed site at a hosted API via `REACT_APP_API_BASE` (see
+> [Configuration](#configuration-environment-variables)), or run the full stack
+> locally with `npm run dev`.
+
 ## What it does — and what it deliberately does not
 
 South African ID numbers encode real personal information (date of birth, gender
