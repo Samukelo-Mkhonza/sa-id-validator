@@ -2,6 +2,7 @@
   "name": "sa-id-validator",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/sa-id-validator",
   "dependencies": {
     "@cloudscape-design/components": "^3.0.574",
     "@testing-library/jest-dom": "^5.17.0",

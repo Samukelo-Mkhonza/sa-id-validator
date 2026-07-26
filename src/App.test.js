@@ -9,6 +9,6 @@ test('renders the ID validator heading', () => {
 
 test('renders the ID number input', () => {
   render(<App />);
-  const input = screen.getByLabelText(/id number/i);
+  const input = screen.getByLabelText(/id number/i, { selector: '#id-input' });
   expect(input).toBeInTheDocument();
 });
